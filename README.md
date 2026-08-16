@@ -1,4 +1,4 @@
-# 🛡️ ControlPlane v6 — Adaptive RAG with Risk-Aware Routing
+# ControlPlane v6: Adaptive RAG with Risk-Aware Routing
 
 > **Not every query deserves the same amount of computation or oversight.**
 > ControlPlane dynamically decides when to retrieve more evidence, validate more aggressively, or involve a human.
@@ -356,10 +356,10 @@ python -m pytest tests/test_graph.py -v         # Graph structure
 
 ## Roadmap
 
-- [x] **Phase 1** — Foundation (router, retrieve, generate, fast path)
-- [x] **Phase 2** — Corrective RAG (grade, web search, Layer 1 validation)
-- [x] **Phase 3** — Governance + HITL (Layer 2 validation, interrupt/resume, dashboard)
-- [ ] **Phase 4** — Evaluation + Packaging (benchmarks, Docker, metrics comparison)
+- [x] **Phase 1** :Foundation (router, retrieve, generate, fast path)
+- [x] **Phase 2** :Corrective RAG (grade, web search, Layer 1 validation)
+- [x] **Phase 3** :Governance + HITL (Layer 2 validation, interrupt/resume, dashboard)
+- [ ] **Phase 4** :Evaluation + Packaging (benchmarks, Docker, metrics comparison)
 
 ---
 
