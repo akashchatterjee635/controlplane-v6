@@ -3,7 +3,7 @@
 > **Not every query deserves the same amount of computation or oversight.**
 > ControlPlane dynamically decides when to retrieve more evidence, validate more aggressively, or involve a human.
 
-A self-governing RAG agent built on [LangGraph](https://github.com/langchain-ai/langgraph) that scores each query for **complexity** and **risk**, then routes it through the appropriate execution path — from a fast, low-overhead pipeline to a fully validated, human-reviewed flow.
+A self-governing RAG agent built on [LangGraph](https://github.com/langchain-ai/langgraph) that scores each query for **complexity** and **risk**, then routes it through the appropriate execution path, from a fast, low-overhead pipeline to a fully validated, human-reviewed flow.
 
 ---
 
