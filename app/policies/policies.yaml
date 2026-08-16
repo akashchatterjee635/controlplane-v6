@@ -1,0 +1,68 @@
+thresholds:
+  complexity_fast_max: 4        # queries scoring <= this use fast path
+  risk_fast_max: 2              # queries scoring <= this use fast path
+  validation_confidence_min: 0.85  # below this triggers human review
+  grading_relevance_min: 0.7    # document relevance threshold
+  retrieval_top_k: 5            # number of documents to retrieve
+
+scoring:
+  query_length_buckets:         # character count thresholds
+    short: 50
+    medium: 150
+    long: 300
+  constraint_keywords:          # words that indicate constraints
+    - "must"
+    - "should not"
+    - "exactly"
+    - "at least"
+    - "no more than"
+    - "between"
+    - "only if"
+    - "unless"
+    - "require"
+    - "mandatory"
+  reasoning_indicators:         # words indicating complex reasoning
+    - "compare"
+    - "analyze"
+    - "evaluate"
+    - "trade-off"
+    - "pros and cons"
+    - "implications"
+    - "recommend"
+    - "why"
+    - "how does"
+    - "what if"
+
+sensitive_topics:
+  - "medical advice"
+  - "legal counsel"
+  - "financial recommendation"
+  - "personal health"
+  - "medication dosage"
+  - "investment advice"
+  - "legal liability"
+  - "diagnosis"
+  - "treatment plan"
+
+prohibited_keywords:
+  - "ignore previous instructions"
+  - "act as root"
+  - "bypass safety"
+  - "disregard all rules"
+  - "pretend you are"
+  - "ignore your system prompt"
+  - "jailbreak"
+
+pii_patterns:
+  ssn: "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+  email: "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b"
+  credit_card: "\\b\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{4}\\b"
+  phone: "\\b(?:\\+?1[-.\\s]?)?\\(?\\d{3}\\)?[-.\\s]?\\d{3}[-.\\s]?\\d{4}\\b"
+
+cost:
+  gpt_4o_mini:
+    prompt_per_1k: 0.00015
+    completion_per_1k: 0.0006
+  gpt_4o:
+    prompt_per_1k: 0.0025
+    completion_per_1k: 0.01
