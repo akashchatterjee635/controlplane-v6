@@ -6,7 +6,7 @@ def test_run_parallel_validators_clean():
     profile = {"pii_policy": "redact"}
     results = run_parallel_validators(state, profile)
     
-    assert len(results) == 5
+    assert len(results) == 6
     for r in results:
         # grounding will fail due to no docs, but others should pass
         if r.name == "grounding_verifier":

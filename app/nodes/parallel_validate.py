@@ -184,6 +184,24 @@ def run_claim_confidence(state: dict, profile: dict) -> ValidatorResult:
     )
 
 
+def run_compliance_check(state: dict, profile: dict) -> ValidatorResult:
+    """Check for compliance/regulatory concerns."""
+    query = state.get("query", "")
+    response = state.get("generation", "")
+    combined = f"{query} {response}"
+    
+    from app.utils.risk_classifier import _check_compliance
+    found, score, detail = _check_compliance(combined)
+
+    return ValidatorResult(
+        name="compliance_checker",
+        passed=not found,
+        risk_labels=["compliance"] if found else [],
+        confidence=1.0 - score,
+        details=detail or "No compliance concerns detected",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Parallel orchestrator
 # ---------------------------------------------------------------------------
@@ -193,6 +211,7 @@ VALIDATORS = [
     ("grounding_verifier", run_grounding_check),
     ("policy_checker", run_policy_check),
     ("bias_detector", run_bias_check),
+    ("compliance_checker", run_compliance_check),
     ("claim_scorer", run_claim_confidence),
 ]
 

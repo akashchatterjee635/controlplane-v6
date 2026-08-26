@@ -68,10 +68,12 @@ def decision_node(state: ControlPlaneState) -> dict[str, Any]:
     review_threshold = profile.get("human_review_threshold", 0.65)
     if decision not in ("block", "edit"): # Don't override block/edit with review yet, or maybe do?
         # Typically REVIEW takes precedence if confidence is low, unless we blocked.
-        if min_confidence < review_threshold:
+        if "compliance" in all_labels:
+            decision = "review"
+            reasoning = "Compliance/sensitive topic detected"
+        elif min_confidence < review_threshold:
             decision = "review"
             reasoning = f"Confidence ({min_confidence:.2f}) below threshold ({review_threshold})"
-            
     # FLAG rules
     if decision == "allow":
         if "unsupported_claim" in all_labels and profile.get("hallucination_check") == "strict":

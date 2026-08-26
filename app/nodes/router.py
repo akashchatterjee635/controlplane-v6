@@ -94,10 +94,11 @@ def compute_risk(query: str, policies: dict | None = None) -> int:
     else:
         score += min(prohibited_hits, 3)
 
-    # 2. Sensitive topic match (0-2)
+    # 2. Sensitive topic match (0-4)
     sensitive_topics = policies.get("sensitive_topics", [])
     topic_hits = sum(1 for topic in sensitive_topics if topic.lower() in query_lower)
-    score += min(topic_hits, 2)
+    if topic_hits > 0:
+        score += 2 * topic_hits
 
     # 3. Prompt injection risk (0-3)
     # Check PII patterns in the query itself (could indicate data exfil attempt)

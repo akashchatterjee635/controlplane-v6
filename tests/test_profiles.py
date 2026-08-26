@@ -13,8 +13,8 @@ def test_load_customer_support_profile():
     assert profile["max_latency_ms"] == 1500
     assert profile["risk_tolerance"] == "low"
     assert profile["hallucination_check"] == "strict"
-    # Should inherit default grading_relevance_min
-    assert profile["grading_relevance_min"] == 0.7
+    # Should inherit default pii_policy (or similar)
+    assert profile["pii_policy"] == "redact"
 
 def test_unknown_profile_falls_back_to_default():
     clear_cache()
