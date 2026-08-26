@@ -28,11 +28,24 @@ def decision_node(state: ControlPlaneState) -> dict[str, Any]:
     
     # BLOCK rules
     if "policy_violation" in all_labels:
-        return {
-            "decision": "block",
-            "decision_reasoning": "Policy violation detected",
-            "audit_log": ["[DECISION] Outcome: BLOCK (Policy violation)"]
-        }
+        violation_action = profile.get("policy_violation_action", "block")
+        if violation_action == "review":
+            decision = "review"
+            reasoning = "Policy violation detected (routed to review for internal testing)"
+            updates = {
+                "decision": decision,
+                "decision_reasoning": reasoning,
+                "audit_log": ["[DECISION] Outcome: REVIEW (Policy violation)"]
+            }
+            if generation != state.get("generation", ""):
+                updates["generation"] = generation
+            return updates
+        else:
+            return {
+                "decision": "block",
+                "decision_reasoning": "Policy violation detected",
+                "audit_log": ["[DECISION] Outcome: BLOCK (Policy violation)"]
+            }
         
     # PII rules
     if "pii_leak" in all_labels:
@@ -46,12 +59,10 @@ def decision_node(state: ControlPlaneState) -> dict[str, Any]:
         elif pii_policy == "redact":
             decision = "edit"
             reasoning = "PII detected (policy=redact)"
-            # Find the PII validator's suggestion, or fallback to general sanitize
+            # Find the PII validator's suggestion
             pii_res = next((r for r in val_results if r.get("name") == "pii_detector"), None)
-            if pii_res and pii_res.get("edit_suggestion"):
+            if pii_res and pii_res.get("edit_suggestion") is not None:
                 generation = pii_res["edit_suggestion"]
-            else:
-                generation = sanitize_output(generation)
 
     # REVIEW rules
     review_threshold = profile.get("human_review_threshold", 0.65)

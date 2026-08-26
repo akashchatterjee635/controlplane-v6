@@ -5,13 +5,14 @@
 default:
   max_latency_ms: 3000
   risk_tolerance: medium       # very_low | low | medium | high
-  pii_policy: redact           # redact | allow_internal | block
-  hallucination_check: medium  # strict | medium | relaxed
+  risk_tolerance: medium
+  pii_policy: redact
+  hallucination_check: strict
   human_review_threshold: 0.65
-  complexity_fast_max: 4
-  risk_fast_max: 2
-  retrieval_top_k: 5
-  grading_relevance_min: 0.7
+  prohibited_keywords:
+    - "ignore previous instructions"
+    - "act as root"
+    - "bypass safety"
 
 customer_support:
   max_latency_ms: 1500
@@ -21,15 +22,24 @@ customer_support:
   human_review_threshold: 0.65
   complexity_fast_max: 3
   risk_fast_max: 1
+  prohibited_keywords:
+    - "ignore previous instructions"
+    - "act as root"
+    - "bypass safety"
 
 internal_knowledge:
   max_latency_ms: 3000
   risk_tolerance: medium
-  pii_policy: allow_internal
+  pii_policy: redact
   hallucination_check: medium
   human_review_threshold: 0.45
-  complexity_fast_max: 5
+  complexity_fast_max: 6
   risk_fast_max: 3
+  policy_violation_action: review
+  prohibited_keywords:
+    - "ignore previous instructions"
+    - "act as root"
+    - "bypass safety"
 
 decision_support:
   max_latency_ms: 8000
@@ -39,3 +49,7 @@ decision_support:
   human_review_threshold: 0.80
   complexity_fast_max: 2
   risk_fast_max: 1
+  prohibited_keywords:
+    - "ignore previous instructions"
+    - "act as root"
+    - "bypass safety"

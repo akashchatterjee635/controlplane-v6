@@ -35,15 +35,37 @@ from app.utils.risk_classifier import (
 # ---------------------------------------------------------------------------
 
 def run_pii_check(state: dict, profile: dict) -> ValidatorResult:
-    """Detect PII in the generated response."""
+    """Detect PII in the generated response and query."""
+    query = state.get("query", "")
     response = state.get("generation", "")
-    found, score, detail = _check_pii(response)
+    
+    # Check both query and response for PII
+    found_q, score_q, detail_q = _check_pii(query)
+    found_r, score_r, detail_r = _check_pii(response)
+    
+    found = found_q or found_r
+    score = max(score_q, score_r)
+    detail_parts = []
+    if found_q: detail_parts.append(f"Query: {detail_q}")
+    if found_r: detail_parts.append(f"Response: {detail_r}")
+    detail = " | ".join(detail_parts)
 
     pii_policy = profile.get("pii_policy", "redact")
     edit_suggestion = None
 
     if found and pii_policy == "redact":
-        edit_suggestion = sanitize_output(response)
+        # If redact, suggest a sanitized response
+        if response:
+            from app.utils.security import detect_pii
+            matches = detect_pii(response, PII_PATTERNS)
+            edit_suggestion = sanitize_output(response, matches)
+        else:
+            edit_suggestion = ""
+        
+        if found_q and not found_r:
+            # If PII was only in query, the response might be fine but we still trigger EDIT outcome
+            # to demonstrate redaction capability (e.g. redacting it from logs or context)
+            pass
 
     return ValidatorResult(
         name="pii_detector",
@@ -283,7 +305,8 @@ def validate_fast_node(state: ControlPlaneState) -> dict[str, Any]:
 
     # Auto-sanitize PII on fast path if policy is "redact"
     if not passed and profile.get("pii_policy", "redact") == "redact":
-        generation = pii_result.edit_suggestion or sanitize_output(generation)
+        if pii_result.edit_suggestion is not None:
+            generation = pii_result.edit_suggestion
 
     combined = {
         "passed": passed or profile.get("pii_policy") == "allow_internal",

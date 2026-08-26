@@ -88,7 +88,11 @@ def compute_risk(query: str, policies: dict | None = None) -> int:
     # 1. Policy keyword / prohibited patterns (0-3)
     prohibited = policies.get("prohibited_keywords", [])
     prohibited_hits = sum(1 for kw in prohibited if kw.lower() in query_lower)
-    score += min(prohibited_hits, 3)
+    if prohibited_hits > 0:
+        # Prompt injections / prohibited words are instantly high risk
+        score += 4
+    else:
+        score += min(prohibited_hits, 3)
 
     # 2. Sensitive topic match (0-2)
     sensitive_topics = policies.get("sensitive_topics", [])
@@ -116,8 +120,12 @@ def router_node(state: ControlPlaneState) -> dict[str, Any]:
     profile = load_profile(use_case)
     
     # We still use the base policies for global scoring rules, 
-    # but thresholds come from the profile.
+    # but thresholds and overrides come from the profile.
     policies = _load_policies()
+    # Override global lists with profile-specific ones if present
+    for key in ["prohibited_keywords", "sensitive_topics", "pii_patterns"]:
+        if key in profile:
+            policies[key] = profile[key]
 
     complexity = compute_complexity(query, policies)
     risk = compute_risk(query, policies)
