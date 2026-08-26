@@ -1,0 +1,30 @@
+import pytest
+from app.policies.profile_loader import load_profile, list_profiles, clear_cache
+
+def test_load_default_profile():
+    clear_cache()
+    profile = load_profile("default")
+    assert profile["max_latency_ms"] == 3000
+    assert profile["pii_policy"] == "redact"
+
+def test_load_customer_support_profile():
+    clear_cache()
+    profile = load_profile("customer_support")
+    assert profile["max_latency_ms"] == 1500
+    assert profile["risk_tolerance"] == "low"
+    assert profile["hallucination_check"] == "strict"
+    # Should inherit default grading_relevance_min
+    assert profile["grading_relevance_min"] == 0.7
+
+def test_unknown_profile_falls_back_to_default():
+    clear_cache()
+    default_profile = load_profile("default")
+    unknown_profile = load_profile("non_existent_profile_123")
+    assert unknown_profile == default_profile
+
+def test_list_profiles():
+    clear_cache()
+    profiles = list_profiles()
+    assert "default" in profiles
+    assert "customer_support" in profiles
+    assert "internal_knowledge" in profiles

@@ -1,9 +1,34 @@
-# ControlPlane v6: Adaptive RAG with Risk-Aware Routing
+# ControlPlane — Adaptive AI Governance Layer for Enterprise RAG Agents
 
-> **Not every query deserves the same amount of computation or oversight.**
-> ControlPlane dynamically decides when to retrieve more evidence, validate more aggressively, or involve a human.
+> **Not every AI interaction deserves the same latency, cost, validation, or human oversight.**
+> ControlPlane dynamically routes enterprise AI queries through risk-calibrated verification paths based on **use case**, **policy**, and **confidence**.
 
-A self-governing RAG agent built on [LangGraph](https://github.com/langchain-ai/langgraph) that scores each query for **complexity** and **risk**, then routes it through the appropriate execution path, from a fast, low-overhead pipeline to a fully validated, human-reviewed flow.
+An adaptive governance layer built on [LangGraph](https://github.com/langchain-ai/langgraph) that scores each query for **complexity** and **risk**, then routes it through the appropriate execution path — from a fast, low-overhead pipeline to a fully validated, human-reviewed flow — with per-use-case policy profiles, composable validators, and tunable decision outcomes.
+
+---
+
+## Assumptions
+
+Designed for enterprises running multiple LLM use cases such as customer support, internal knowledge search, and decision support, with different latency, privacy, and risk tolerances. The system assumes foundation models are accessed through APIs, ground truth is often incomplete, and governance must work at the **input/output**, **retrieval**, **policy**, and **audit** layers rather than inside the model itself.
+
+---
+
+## Solution Architecture
+
+### Policy Profiles for Different Use Cases
+Customer-facing assistants get stricter validation and lower hallucination tolerance; internal knowledge tools get faster responses; decision-support tools require stronger grounding and HITL review.
+
+### Composable Validators Instead of One Checker
+PII detection, grounding checks, retrieval verification, bias/sensitive-topic detection, prompt-injection checks, and AI-as-judge validation can run independently or in parallel.
+
+### Risk-Calibrated Routing
+Low-risk queries use a fast path; high-risk or ambiguous queries trigger retrieval grading, web fallback, stronger validation, and human review.
+
+### Tunable Decision Outcomes
+Instead of pass/fail, the system can **allow**, **redact**, **warn**, **escalate**, **block**, or **audit** depending on confidence and policy.
+
+### Feedback and Monitoring Loop
+Reviewer decisions, false positives, false negatives, token cost, latency, guardrail blocks, and escalation rates feed back into threshold tuning.
 
 ---
 
@@ -356,10 +381,11 @@ python -m pytest tests/test_graph.py -v         # Graph structure
 
 ## Roadmap
 
-- [x] **Phase 1** :Foundation (router, retrieve, generate, fast path)
-- [x] **Phase 2** :Corrective RAG (grade, web search, Layer 1 validation)
-- [x] **Phase 3** :Governance + HITL (Layer 2 validation, interrupt/resume, dashboard)
-- [ ] **Phase 4** :Evaluation + Packaging (benchmarks, Docker, metrics comparison)
+- [x] **Phase 1** — Foundation (router, retrieve, generate, fast path)
+- [x] **Phase 2** — Corrective RAG (grade, web search, Layer 1 validation)
+- [x] **Phase 3** — Governance + HITL (Layer 2 validation, interrupt/resume, dashboard)
+- [x] **Phase 4** — Evaluation + Packaging (benchmarks, Docker, metrics comparison)
+- [ ] **Phase 5** — Enterprise Governance (use-case profiles, multi-label risk, parallel validators, tunable decisions, audit/feedback loop)
 
 ---
 

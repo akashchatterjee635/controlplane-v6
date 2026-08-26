@@ -54,6 +54,31 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 # Request / Response Models
 # ---------------------------------------------------------------------------
+# --- V2 Models ---
+class QueryRequestV2(BaseModel):
+    query: str = Field(..., min_length=1, max_length=2000, description="The user query")
+    use_case: str = Field(default="default", description="The policy profile to use")
+    thread_id: Optional[str] = Field(
+        default=None,
+        description="Optional thread ID for conversation continuity",
+    )
+
+class QueryResponseV2(BaseModel):
+    thread_id: str
+    query: str
+    use_case: str
+    response: str
+    route: str
+    decision: str
+    decision_reasoning: str
+    risk_labels: list[str]
+    complexity_score: int
+    risk_score: int
+    cost: dict[str, Any]
+    audit_log: list[str]
+    status: str  # "complete" | "pending_review"
+
+# --- V1 Models (Legacy) ---
 class QueryRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000, description="The user query")
     thread_id: Optional[str] = Field(
@@ -96,9 +121,11 @@ class ReviewResponse(BaseModel):
 class PendingReviewItem(BaseModel):
     thread_id: str
     query: str
+    use_case: str = "default"
     generated_response: str
     validation_flags: list[str]
     confidence: float
+    decision_reasoning: str = ""
     risk_score: int
     complexity_score: int
 
@@ -114,16 +141,78 @@ class HealthResponse(BaseModel):
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
-    return HealthResponse(status="healthy", version="0.3.0")
+    return HealthResponse(status="healthy", version="0.4.0")
+
+
+@app.post("/api/v2/query", response_model=QueryResponseV2)
+async def submit_query_v2(request: QueryRequestV2):
+    """Submit a query for adaptive RAG processing with use-case governance."""
+    if _compiled_graph is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Graph not initialized",
+        )
+
+    thread_id = request.thread_id or str(uuid.uuid4())
+    config = {"configurable": {"thread_id": thread_id}}
+
+    try:
+        result = await run_in_threadpool(
+            _compiled_graph.invoke,
+            {"query": request.query, "use_case": request.use_case},
+            config,
+        )
+    except Exception as e:
+        # Check if this was an interrupt (HITL pause)
+        try:
+            graph_state = await run_in_threadpool(
+                _compiled_graph.get_state, config
+            )
+            if graph_state and graph_state.next:
+                # Graph is paused at human_review
+                values = graph_state.values
+                return QueryResponseV2(
+                    thread_id=thread_id,
+                    query=request.query,
+                    use_case=request.use_case,
+                    response=values.get("generation", ""),
+                    route=values.get("route", "verified"),
+                    decision=values.get("decision", "review"),
+                    decision_reasoning=values.get("decision_reasoning", ""),
+                    risk_labels=values.get("risk_labels", []),
+                    complexity_score=values.get("complexity_score", 0),
+                    risk_score=values.get("risk_score", 0),
+                    cost=values.get("cost_tracker", {}),
+                    audit_log=values.get("audit_log", []),
+                    status="pending_review",
+                )
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Graph execution failed: {str(e)}",
+        )
+
+    return QueryResponseV2(
+        thread_id=thread_id,
+        query=request.query,
+        use_case=request.use_case,
+        response=result.get("generation", ""),
+        route=result.get("route", "unknown"),
+        decision=result.get("decision", "allow"),
+        decision_reasoning=result.get("decision_reasoning", ""),
+        risk_labels=result.get("risk_labels", []),
+        complexity_score=result.get("complexity_score", 0),
+        risk_score=result.get("risk_score", 0),
+        cost=result.get("cost_tracker", {}),
+        audit_log=result.get("audit_log", []),
+        status="complete",
+    )
 
 
 @app.post("/api/v1/query", response_model=QueryResponse)
 async def submit_query(request: QueryRequest):
-    """Submit a query for adaptive RAG processing.
-
-    If the verified path flags the response, the graph will pause at
-    human_review and the status will be 'pending_review'.
-    """
+    """Legacy v1 endpoint for backward compatibility."""
     if _compiled_graph is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

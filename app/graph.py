@@ -1,13 +1,13 @@
-"""ControlPlane v6 — LangGraph state graph construction.
+"""ControlPlane v7 — LangGraph state graph construction.
 
 Full pipeline:
-  Fast path:     retrieve → generate → validate_basic → END
-  Verified path: retrieve → grade → (generate | web_search) → validate_full
-                   → (END | human_review → END)
+  Fast path:     retrieve → generate → validate_fast → decision → (outcomes)
+  Verified path: retrieve → grade → (generate | web_search) → parallel_validate 
+                   → decision → (END | human_review | block) → audit_logger
 """
 
 import os
-from typing import Literal
+from typing import Literal, Any
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -16,6 +16,15 @@ from app.state import ControlPlaneState
 from app.nodes.router import router_node, route_decision
 from app.nodes.retrieve import retrieve_node
 from app.nodes.generate import generate_node
+from app.utils.audit import create_audit_record, log_audit
+
+
+def audit_logger_node(state: ControlPlaneState) -> dict[str, Any]:
+    """LangGraph node: logs the final state to the audit log."""
+    record = create_audit_record(dict(state))
+    log_audit(record)
+    import dataclasses
+    return {"audit_record": dataclasses.asdict(record)}
 
 
 def build_graph() -> StateGraph:
@@ -29,21 +38,27 @@ def build_graph() -> StateGraph:
     builder.add_node("router", router_node)
     from app.nodes.grade import grade_documents_node, decide_to_generate
     from app.nodes.web_search import web_search_node
-    from app.nodes.validate import validate_basic_node, validate_full_node, triage_decision
+    from app.nodes.parallel_validate import validate_fast_node, parallel_validate_node
+    from app.nodes.decision import decision_node, decision_routing, block_response_node
     from app.nodes.human_review import human_review_node
     
-    # Fast path nodes (same functions, different node names)
+    # Fast path nodes
     builder.add_node("retrieve_fast", retrieve_node)
     builder.add_node("generate_fast", generate_node)
-    builder.add_node("validate_basic", validate_basic_node)
+    builder.add_node("validate_fast", validate_fast_node)
     
-    # Verified path nodes (same functions for now; Phase 2 will differentiate)
+    # Verified path nodes
     builder.add_node("retrieve_verified", retrieve_node)
     builder.add_node("grade_docs", grade_documents_node)
     builder.add_node("web_search", web_search_node)
     builder.add_node("generate_verified", generate_node)
-    builder.add_node("validate_full", validate_full_node)
+    builder.add_node("parallel_validate", parallel_validate_node)
+    
+    # Shared decision/outcome nodes
+    builder.add_node("decision", decision_node)
+    builder.add_node("block_response", block_response_node)
     builder.add_node("human_review", human_review_node)
+    builder.add_node("audit_logger", audit_logger_node)
 
     # ---- Wire edges ----
     builder.add_edge(START, "router")
@@ -58,12 +73,12 @@ def build_graph() -> StateGraph:
         },
     )
 
-    # Fast path: retrieve → generate → validate_basic → END
+    # Fast path: retrieve → generate → validate_fast → decision
     builder.add_edge("retrieve_fast", "generate_fast")
-    builder.add_edge("generate_fast", "validate_basic")
-    builder.add_edge("validate_basic", END)
+    builder.add_edge("generate_fast", "validate_fast")
+    builder.add_edge("validate_fast", "decision")
 
-    # Verified path: retrieve → grade → (generate | web_search) → validate → END
+    # Verified path: retrieve → grade → (generate | web_search) → parallel_validate → decision
     builder.add_edge("retrieve_verified", "grade_docs")
     
     builder.add_conditional_edges(
@@ -76,41 +91,37 @@ def build_graph() -> StateGraph:
     )
     
     builder.add_edge("web_search", "generate_verified")
-    builder.add_edge("generate_verified", "validate_full")
+    builder.add_edge("generate_verified", "parallel_validate")
+    builder.add_edge("parallel_validate", "decision")
     
-    # Conditional edge: if human review needed, pause; otherwise end
+    # Conditional edge: Decision Layer outcomes
     builder.add_conditional_edges(
-        "validate_full",
-        triage_decision,
-        {"end": END, "human_review": "human_review"},
+        "decision",
+        decision_routing,
+        {
+            "end": "audit_logger",
+            "human_review": "human_review",
+            "block_response": "block_response",
+        },
     )
-    builder.add_edge("human_review", END)
+    
+    # Re-converge to audit logger
+    builder.add_edge("human_review", "audit_logger")
+    builder.add_edge("block_response", "audit_logger")
+    
+    builder.add_edge("audit_logger", END)
 
     return builder
 
 
 def get_compiled_graph(checkpointer=None):
-    """Build and compile the graph, optionally with a checkpointer.
-
-    Args:
-        checkpointer: A LangGraph checkpointer instance. If None,
-                      graph runs without persistence (no HITL support).
-    
-    Returns:
-        A compiled LangGraph runnable.
-    """
+    """Build and compile the graph, optionally with a checkpointer."""
     builder = build_graph()
     return builder.compile(checkpointer=checkpointer)
 
 
 def get_graph_with_sqlite(db_path: str | None = None):
-    """Build and compile the graph with SQLite persistence.
-    
-    Returns a context manager that yields the compiled graph.
-    Use with `with` statement:
-        with get_graph_with_sqlite() as graph:
-            result = graph.invoke({...}, config={...})
-    """
+    """Build and compile the graph with SQLite persistence."""
     if db_path is None:
         db_path = os.getenv("SQLITE_CHECKPOINT_PATH", "./checkpoints.db")
     

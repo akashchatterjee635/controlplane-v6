@@ -1,0 +1,41 @@
+# ControlPlane — Use-Case Policy Profiles
+# Each profile overrides fields from "default".
+# The router, validators, and decision layer all read from the active profile.
+
+default:
+  max_latency_ms: 3000
+  risk_tolerance: medium       # very_low | low | medium | high
+  pii_policy: redact           # redact | allow_internal | block
+  hallucination_check: medium  # strict | medium | relaxed
+  human_review_threshold: 0.65
+  complexity_fast_max: 4
+  risk_fast_max: 2
+  retrieval_top_k: 5
+  grading_relevance_min: 0.7
+
+customer_support:
+  max_latency_ms: 1500
+  risk_tolerance: low
+  pii_policy: redact
+  hallucination_check: strict
+  human_review_threshold: 0.65
+  complexity_fast_max: 3
+  risk_fast_max: 1
+
+internal_knowledge:
+  max_latency_ms: 3000
+  risk_tolerance: medium
+  pii_policy: allow_internal
+  hallucination_check: medium
+  human_review_threshold: 0.45
+  complexity_fast_max: 5
+  risk_fast_max: 3
+
+decision_support:
+  max_latency_ms: 8000
+  risk_tolerance: very_low
+  pii_policy: redact
+  hallucination_check: strict
+  human_review_threshold: 0.80
+  complexity_fast_max: 2
+  risk_fast_max: 1

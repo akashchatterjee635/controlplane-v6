@@ -109,27 +109,34 @@ def compute_risk(query: str, policies: dict | None = None) -> int:
 
 def router_node(state: ControlPlaneState) -> dict[str, Any]:
     """LangGraph node: scores the query and determines the execution path."""
-    query = state["query"]
+    query = state.get("query", "")
+    use_case = state.get("use_case", "default")
+    
+    from app.policies.profile_loader import load_profile
+    profile = load_profile(use_case)
+    
+    # We still use the base policies for global scoring rules, 
+    # but thresholds come from the profile.
     policies = _load_policies()
-    thresholds = policies.get("thresholds", {})
 
     complexity = compute_complexity(query, policies)
     risk = compute_risk(query, policies)
 
-    complexity_max = thresholds.get("complexity_fast_max", 4)
-    risk_max = thresholds.get("risk_fast_max", 2)
+    complexity_max = profile.get("complexity_fast_max", 4)
+    risk_max = profile.get("risk_fast_max", 2)
 
     route: Literal["fast", "verified"] = (
         "fast" if complexity <= complexity_max and risk <= risk_max else "verified"
     )
 
     return {
+        "active_profile": profile,
         "complexity_score": complexity,
         "risk_score": risk,
         "route": route,
         "cost_tracker": new_cost_record(),
         "audit_log": [
-            f"[ROUTER] complexity={complexity}, risk={risk}, route={route}"
+            f"[ROUTER] use_case={use_case}, complexity={complexity}, risk={risk}, route={route}"
         ],
     }
 

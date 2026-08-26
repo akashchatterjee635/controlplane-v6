@@ -90,7 +90,7 @@ class TestGraphWithHITL:
             "grade_docs",
             "web_search",
             "generate_verified",
-            "validate_full",
+            "parallel_validate",
             "human_review",
         ]
         for node in expected_nodes:

@@ -1,4 +1,4 @@
-"""ControlPlane v6 — Central State Schema.
+"""ControlPlane — Central State Schema.
 
 Defines the shared state TypedDict used across all LangGraph nodes.
 All nodes read from and write to this state.
@@ -31,11 +31,37 @@ class CostRecord:
 
 
 # ---------------------------------------------------------------------------
-# Validation result
+# Risk assessment (multi-label)
+# ---------------------------------------------------------------------------
+@dataclass
+class RiskAssessment:
+    """Multi-label risk assessment for a query/response pair."""
+    labels: list[str] = field(default_factory=list)        # e.g. ["hallucination", "pii_leak"]
+    severity: str = "low"                                  # low | medium | high | critical
+    scores: dict[str, float] = field(default_factory=dict) # per-label scores
+    details: str = ""
+
+
+# ---------------------------------------------------------------------------
+# Validator result (per-validator)
+# ---------------------------------------------------------------------------
+@dataclass
+class ValidatorResult:
+    """Output of a single validator in the parallel validation layer."""
+    name: str = ""               # e.g. "pii_detector"
+    passed: bool = True
+    risk_labels: list[str] = field(default_factory=list)
+    confidence: float = 1.0
+    details: str = ""
+    edit_suggestion: str | None = None  # optional auto-edit for EDIT decision
+
+
+# ---------------------------------------------------------------------------
+# Validation result (combined)
 # ---------------------------------------------------------------------------
 @dataclass
 class ValidationResult:
-    """Output of the validation pipeline."""
+    """Combined output of the validation pipeline."""
     passed: bool = True
     grounded: Optional[bool] = None
     safe: Optional[bool] = None
@@ -43,6 +69,7 @@ class ValidationResult:
     confidence: float = 1.0
     flags: list[str] = field(default_factory=list)
     details: str = ""
+    validator_results: list[dict] = field(default_factory=list)  # serialized ValidatorResults
 
 
 # ---------------------------------------------------------------------------
@@ -58,6 +85,28 @@ class HumanDecision:
 
 
 # ---------------------------------------------------------------------------
+# Audit record
+# ---------------------------------------------------------------------------
+@dataclass
+class AuditRecord:
+    """Structured audit log entry for every graph execution."""
+    query_id: str = ""
+    timestamp: str = ""
+    use_case: str = "default"
+    route: str = ""
+    complexity_score: int = 0
+    risk_score: int = 0
+    risk_labels: list[str] = field(default_factory=list)
+    validators_triggered: list[str] = field(default_factory=list)
+    decision: str = ""           # allow/edit/flag/review/block
+    decision_reasoning: str = ""
+    reviewer_action: str | None = None
+    final_output_hash: str = ""
+    latency_ms: float = 0.0
+    cost_usd: float = 0.0
+
+
+# ---------------------------------------------------------------------------
 # Graph State
 # ---------------------------------------------------------------------------
 class ControlPlaneState(TypedDict, total=False):
@@ -68,6 +117,10 @@ class ControlPlaneState(TypedDict, total=False):
     """
     # ---- Input ----
     query: str
+    use_case: str                                    # NEW: policy profile selector
+
+    # ---- Profile ----
+    active_profile: dict[str, Any]                   # NEW: resolved profile settings
 
     # ---- Router ----
     complexity_score: int
@@ -84,13 +137,23 @@ class ControlPlaneState(TypedDict, total=False):
     # ---- Generation ----
     generation: str
 
+    # ---- Multi-label risk ----
+    risk_labels: list[str]                           # NEW: overlapping risk labels
+    risk_assessment: dict[str, Any]                  # NEW: serialized RiskAssessment
+
     # ---- Validation ----
-    validation_result: dict[str, Any]  # serialized ValidationResult
+    validation_result: dict[str, Any]                # serialized ValidationResult
+    validator_results: list[dict[str, Any]]          # NEW: per-validator results
     human_review_needed: bool
 
+    # ---- Decision ----
+    decision: str                                    # NEW: allow/edit/flag/review/block
+    decision_reasoning: str                          # NEW: why this decision
+
     # ---- HITL ----
-    human_decision: dict[str, Any]  # serialized HumanDecision
+    human_decision: dict[str, Any]                   # serialized HumanDecision
 
     # ---- Observability ----
-    cost_tracker: dict[str, Any]  # serialized CostRecord
+    cost_tracker: dict[str, Any]                     # serialized CostRecord
     audit_log: Annotated[list[str], operator.add]
+    audit_record: dict[str, Any]                     # NEW: serialized AuditRecord
