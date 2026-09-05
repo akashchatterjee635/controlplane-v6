@@ -3,6 +3,9 @@
 > **Not every AI interaction deserves the same latency, cost, validation, or human oversight.**
 > ControlPlane dynamically routes enterprise AI queries through risk-calibrated verification paths based on **use case**, **policy**, and **confidence**.
 
+### Evaluation Results 🔬
+Across 50 benchmark queries, ControlPlane's adaptive routing matched the 82.6% safety recall of an always-verified pipeline while reducing **false escalations from 61.5% to 26.9%**, **average latency from 9.95s to 7.71s**, and estimated **inference cost from $0.000629 to $0.000451 per query**.
+
 An adaptive governance layer built on [LangGraph](https://github.com/langchain-ai/langgraph) that scores each query for **complexity** and **risk**, then routes it through the appropriate execution path — from a fast, low-overhead pipeline to a fully validated, human-reviewed flow — with per-use-case policy profiles, composable validators, and tunable decision outcomes.
 
 ---

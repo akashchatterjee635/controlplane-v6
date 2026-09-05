@@ -167,6 +167,11 @@ class Principal(BaseModel):
 async def verify_api_key(x_api_key: str | None = Header(default=None)) -> Principal:
     """Optional API key verification. Enabled when CONTROLPLANE_API_KEY is set."""
     if not _API_KEY:
+        if os.getenv("ENV", "development") == "production":
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Server configuration error: CONTROLPLANE_API_KEY is required in production",
+            )
         return Principal(user_id="anonymous", role="admin")
         
     if x_api_key != _API_KEY:
