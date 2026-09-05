@@ -1,5 +1,5 @@
-import pytest
-from app.nodes.parallel_validate import run_parallel_validators, parallel_validate_node
+from app.nodes.parallel_validate import parallel_validate_node, run_parallel_validators
+
 
 def test_run_parallel_validators_clean():
     state = {"query": "Hello", "generation": "Hi there.", "documents": []}

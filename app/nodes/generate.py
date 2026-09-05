@@ -4,13 +4,12 @@ import os
 from typing import Any
 
 from langchain_core.documents import Document
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
 
 from app.state import ControlPlaneState
-from app.utils.retrieval_security import sanitize_documents
 from app.utils.cost import update_cost_record
-
+from app.utils.retrieval_security import sanitize_documents
 
 RAG_SYSTEM_PROMPT = """You are ControlPlane, an AI assistant that answers questions based on provided evidence.
 

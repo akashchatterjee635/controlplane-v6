@@ -1,5 +1,5 @@
-import pytest
-from app.policies.profile_loader import load_profile, list_profiles, clear_cache
+from app.policies.profile_loader import clear_cache, list_profiles, load_profile
+
 
 def test_load_default_profile():
     clear_cache()

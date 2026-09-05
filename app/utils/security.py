@@ -3,6 +3,7 @@
 import re
 from typing import Any
 
+
 def detect_pii(text: str, patterns: dict[str, str]) -> list[dict[str, Any]]:
     """Detect PII in text using regex patterns.
     

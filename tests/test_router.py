@@ -8,10 +8,13 @@ Tests cover:
 - Edge cases: empty queries, maximum scores, boundary thresholds
 """
 
-import pytest
 
-from app.nodes.router import compute_complexity, compute_risk, router_node, route_decision
-
+from app.nodes.router import (
+    compute_complexity,
+    compute_risk,
+    route_decision,
+    router_node,
+)
 
 # ============================================================================
 # compute_complexity() tests

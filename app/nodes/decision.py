@@ -8,9 +8,10 @@ Maps validator results and risk profiles to explicit outcomes:
   BLOCK  : Unsafe or prohibited → block entirely
 """
 
-from typing import Any, Literal
+from typing import Any
+
 from app.state import ControlPlaneState
-from app.utils.security import sanitize_output
+
 
 def decision_node(state: ControlPlaneState) -> dict[str, Any]:
     """LangGraph node: evaluate validator results and output a decision."""

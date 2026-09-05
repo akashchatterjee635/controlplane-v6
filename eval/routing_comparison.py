@@ -26,8 +26,8 @@ from eval.metrics import load_dataset
 
 def _make_forced_router(force_route: str):
     """Create a router node that always returns the specified route."""
-    from app.utils.cost import new_cost_record
     from app.policies.profile_loader import load_profile
+    from app.utils.cost import new_cost_record
 
     def forced_router_node(state):
         query = state.get("query", "")
@@ -46,17 +46,18 @@ def _make_forced_router(force_route: str):
 
 def build_forced_graph(force_route: str):
     """Build a graph with a forced routing strategy."""
-    from langgraph.graph import StateGraph, START, END
-    from app.state import ControlPlaneState
-    from app.nodes.router import route_decision
-    from app.nodes.retrieve import retrieve_node
-    from app.nodes.generate import generate_node
-    from app.nodes.grade import grade_documents_node, decide_to_generate
-    from app.nodes.web_search import web_search_node
-    from app.nodes.parallel_validate import validate_fast_node, parallel_validate_node
-    from app.nodes.decision import decision_node, decision_routing, block_response_node
-    from app.nodes.human_review import human_review_node
+    from langgraph.graph import END, START, StateGraph
+
     from app.graph import audit_logger_node
+    from app.nodes.decision import block_response_node, decision_node, decision_routing
+    from app.nodes.generate import generate_node
+    from app.nodes.grade import decide_to_generate, grade_documents_node
+    from app.nodes.human_review import human_review_node
+    from app.nodes.parallel_validate import parallel_validate_node, validate_fast_node
+    from app.nodes.retrieve import retrieve_node
+    from app.nodes.router import route_decision
+    from app.nodes.web_search import web_search_node
+    from app.state import ControlPlaneState
 
     builder = StateGraph(ControlPlaneState)
 

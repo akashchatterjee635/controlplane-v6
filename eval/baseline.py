@@ -10,7 +10,6 @@ Usage:
 """
 
 import argparse
-import json
 import os
 import sys
 import time
@@ -23,20 +22,19 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 load_dotenv()
 
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.documents import Document
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
 
-from app.utils.embeddings import EmbeddingService
 from app.utils.cost import update_cost_record
+from app.utils.embeddings import EmbeddingService
 from eval.metrics import (
-    load_dataset,
-    score_single_query,
     aggregate_report,
+    load_dataset,
     print_report,
     save_results,
+    score_single_query,
 )
-
 
 RAG_SYSTEM_PROMPT = """You are a helpful AI assistant that answers questions based on provided context.
 Answer ONLY based on the provided context documents.
@@ -129,7 +127,7 @@ def run_baseline_eval(dataset_path: str | None = None, output_path: str | None =
     dataset = load_dataset(dataset_path)
     print(f"\n🔬 Baseline Evaluation — {len(dataset)} queries")
     print(f"   Model: {os.getenv('LLM_MODEL', 'gpt-4o-mini')}")
-    print(f"   Mode: Vanilla RAG (no routing, no validation)\n")
+    print("   Mode: Vanilla RAG (no routing, no validation)\n")
 
     scores = []
     for i, query_data in enumerate(dataset):

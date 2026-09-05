@@ -21,19 +21,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
 from typing import Any
 
-import yaml
-
 from app.state import ControlPlaneState, ValidatorResult
-from app.utils.security import detect_pii, check_prompt_injection, sanitize_output
 from app.utils.risk_classifier import (
-    _check_pii,
+    PII_PATTERNS,
     _check_bias,
     _check_compliance,
+    _check_pii,
     _check_policy_violation,
     _check_unsupported_claims,
-    PII_PATTERNS,
 )
-
+from app.utils.security import check_prompt_injection, sanitize_output
 
 # ---------------------------------------------------------------------------
 # LLM Semantic Judge (Layer 1)
@@ -50,8 +47,8 @@ def _llm_judge(text: str, question: str) -> bool:
         True if the LLM confirms the flag is a true positive.
         False if the LLM says it's a false positive (override).
     """
+    from langchain_core.messages import HumanMessage, SystemMessage
     from langchain_openai import ChatOpenAI
-    from langchain_core.messages import SystemMessage, HumanMessage
 
     try:
         judge = ChatOpenAI(
@@ -150,8 +147,8 @@ def run_grounding_check(state: dict, profile: dict) -> ValidatorResult:
     )
 
     # Use LLM to extract claims and check support
+    from langchain_core.messages import HumanMessage, SystemMessage
     from langchain_openai import ChatOpenAI
-    from langchain_core.messages import SystemMessage, HumanMessage
 
     hallucination_check = profile.get("hallucination_check", "medium")
 
@@ -184,8 +181,7 @@ def run_grounding_check(state: dict, profile: dict) -> ValidatorResult:
         # Handle potential markdown code blocks
         if "```" in result_text:
             result_text = result_text.split("```")[1]
-            if result_text.startswith("json"):
-                result_text = result_text[4:]
+            result_text = result_text.removeprefix("json")
         result_data = json.loads(result_text)
 
         supported = result_data.get("supported", 0)
@@ -366,7 +362,6 @@ def run_compliance_check(state: dict, profile: dict) -> ValidatorResult:
     response = state.get("generation", "")
     combined = f"{query} {response}"
     
-    from app.utils.risk_classifier import _check_compliance
     found, score, detail = _check_compliance(combined)
 
     if not found:
@@ -447,7 +442,7 @@ def run_parallel_validators(
                     passed=False,
                     risk_labels=["validator_error"],
                     confidence=0.0,
-                    details=f"Validator error: {str(e)}",
+                    details=f"Validator error: {e!s}",
                 ))
 
     return results

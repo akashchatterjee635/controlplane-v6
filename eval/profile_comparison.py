@@ -10,11 +10,12 @@ Outputs a comparison report showing how the decision outcomes
 change based on the active profile's tolerances.
 """
 
+import json
 import os
 import sys
-import json
 import time
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Add project root to path
@@ -23,7 +24,7 @@ load_dotenv()
 
 from app.graph import build_graph
 from eval.metrics import load_dataset
-from app.state import ControlPlaneState
+
 
 def run_single_query(graph, query: str, use_case: str, thread_id: str) -> dict:
     config = {"configurable": {"thread_id": thread_id}}

@@ -3,11 +3,12 @@
 Writes structured JSONL audit logs for every graph execution.
 """
 
+import hashlib
 import json
 import os
-import hashlib
-from typing import Any
 from pathlib import Path
+from typing import Any
+
 from app.state import AuditRecord
 
 _AUDIT_LOG_PATH = Path(os.environ.get("AUDIT_LOG_PATH", "data/audit_log.jsonl"))

@@ -1,5 +1,5 @@
-import pytest
 from app.nodes.decision import decision_node
+
 
 def test_decision_allow():
     state = {

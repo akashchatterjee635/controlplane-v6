@@ -8,6 +8,7 @@ from tavily import TavilyClient
 
 from app.state import ControlPlaneState
 
+
 def web_search_node(state: ControlPlaneState) -> dict[str, Any]:
     """Perform a web search using Tavily.
     
@@ -55,5 +56,5 @@ def web_search_node(state: ControlPlaneState) -> dict[str, Any]:
         
     except Exception as e:
         return {
-            "audit_log": [f"[WEB_SEARCH] Web search failed: {str(e)}"],
+            "audit_log": [f"[WEB_SEARCH] Web search failed: {e!s}"],
         }

@@ -5,7 +5,6 @@ Usage:
     # Returns default values overridden by customer_support-specific settings
 """
 
-import os
 from pathlib import Path
 from typing import Any
 

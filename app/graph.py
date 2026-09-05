@@ -7,15 +7,15 @@ Full pipeline:
 """
 
 import os
-from typing import Literal, Any
+from typing import Any
 
-from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.graph import END, START, StateGraph
 
-from app.state import ControlPlaneState
-from app.nodes.router import router_node, route_decision
-from app.nodes.retrieve import retrieve_node
 from app.nodes.generate import generate_node
+from app.nodes.retrieve import retrieve_node
+from app.nodes.router import route_decision, router_node
+from app.state import ControlPlaneState
 from app.utils.audit import create_audit_record, log_audit
 
 
@@ -36,11 +36,11 @@ def build_graph() -> StateGraph:
 
     # ---- Register nodes ----
     builder.add_node("router", router_node)
-    from app.nodes.grade import grade_documents_node, decide_to_generate
-    from app.nodes.web_search import web_search_node
-    from app.nodes.parallel_validate import validate_fast_node, parallel_validate_node
-    from app.nodes.decision import decision_node, decision_routing, block_response_node
+    from app.nodes.decision import block_response_node, decision_node, decision_routing
+    from app.nodes.grade import decide_to_generate, grade_documents_node
     from app.nodes.human_review import human_review_node
+    from app.nodes.parallel_validate import parallel_validate_node, validate_fast_node
+    from app.nodes.web_search import web_search_node
     
     # Fast path nodes
     builder.add_node("retrieve_fast", retrieve_node)

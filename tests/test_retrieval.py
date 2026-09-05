@@ -8,16 +8,13 @@ Tests cover:
 - Edge cases: empty collection, no results
 """
 
-import os
-import json
 
-import pytest
 import chromadb
+import pytest
 from langchain_core.documents import Document
 
+from app.nodes.retrieve import reset_collection, retrieve_node
 from app.utils.embeddings import EmbeddingService, get_embedding_service
-from app.nodes.retrieve import retrieve_node, reset_collection
-
 
 # ============================================================================
 # EmbeddingService tests

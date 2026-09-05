@@ -13,7 +13,6 @@ from typing import Any
 
 from app.state import RiskAssessment
 
-
 # ---------------------------------------------------------------------------
 # Keyword / pattern banks
 # ---------------------------------------------------------------------------
@@ -94,7 +93,7 @@ def _check_policy_violation(text: str) -> tuple[bool, float, str]:
     """Check for injection patterns / policy violations."""
     for pattern in INJECTION_PATTERNS:
         if re.search(pattern, text, re.IGNORECASE):
-            return True, 0.9, f"Policy violation: injection pattern detected"
+            return True, 0.9, "Policy violation: injection pattern detected"
     return False, 0.0, ""
 
 

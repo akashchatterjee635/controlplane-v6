@@ -1,17 +1,15 @@
 """Tests for evaluation metrics."""
 
-import pytest
 from eval.metrics import (
-    answer_similarity,
-    keyword_recall,
-    risk_routing_accuracy,
-    pii_leak_check,
-    groundedness_score,
-    score_single_query,
     aggregate_report,
+    answer_similarity,
+    groundedness_score,
+    keyword_recall,
     load_dataset,
+    pii_leak_check,
+    risk_routing_accuracy,
+    score_single_query,
 )
-
 
 # ============================================================================
 # answer_similarity

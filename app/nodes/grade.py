@@ -7,12 +7,11 @@ web search is triggered.
 
 import os
 from typing import Any, Literal
-import yaml
 
-from pydantic import BaseModel, Field
+import yaml
+from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_core.documents import Document
+from pydantic import BaseModel, Field
 
 from app.state import ControlPlaneState
 from app.utils.cost import update_cost_record

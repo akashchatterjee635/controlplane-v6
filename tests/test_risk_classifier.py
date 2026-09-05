@@ -1,5 +1,5 @@
-import pytest
 from app.utils.risk_classifier import classify_risk
+
 
 def test_clean_response():
     res = classify_risk("What is Docker?", "Docker is a container platform.", ["Docker is a container platform."])

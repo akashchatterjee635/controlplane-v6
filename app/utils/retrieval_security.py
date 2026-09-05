@@ -5,7 +5,6 @@ Assigns trust scores based on document source.
 """
 
 import re
-from typing import Any
 
 from langchain_core.documents import Document
 

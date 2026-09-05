@@ -1,6 +1,5 @@
 """Tests for the StateGraph construction and execution."""
 
-import pytest
 from app.graph import build_graph
 
 

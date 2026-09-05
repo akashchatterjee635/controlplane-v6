@@ -7,14 +7,14 @@ and status checking.
 import os
 import uuid
 from contextlib import asynccontextmanager
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
-from pydantic import BaseModel, Field
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.types import Command
+from pydantic import BaseModel, Field
 
 from app.graph import get_compiled_graph
 
@@ -59,7 +59,7 @@ app = FastAPI(
 class QueryRequestV2(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000, description="The user query")
     use_case: str = Field(default="default", description="The policy profile to use")
-    thread_id: Optional[str] = Field(
+    thread_id: str | None = Field(
         default=None,
         description="Optional thread ID for conversation continuity",
     )
@@ -82,7 +82,7 @@ class QueryResponseV2(BaseModel):
 # --- V1 Models (Legacy) ---
 class QueryRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2000, description="The user query")
-    thread_id: Optional[str] = Field(
+    thread_id: str | None = Field(
         default=None,
         description="Optional thread ID for conversation continuity",
     )
@@ -104,7 +104,7 @@ class ReviewRequest(BaseModel):
     decision: Literal["approve", "redact", "deny"] = Field(
         ..., description="The reviewer's decision"
     )
-    redacted_response: Optional[str] = Field(
+    redacted_response: str | None = Field(
         default=None,
         description="Replacement text when decision is 'redact'",
     )
@@ -155,7 +155,7 @@ class ThreadStatusResponse(BaseModel):
 # The server should derive reviewer_id, tenant_id, roles from
 # authenticated identity — not from user-controlled JSON.
 
-from fastapi import Depends, Header
+from fastapi import Header
 
 _API_KEY = os.getenv("CONTROLPLANE_API_KEY")  # None = auth disabled
 
@@ -224,7 +224,7 @@ async def submit_query_v2(request: QueryRequestV2):
             pass
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Graph execution failed: {str(e)}",
+            detail=f"Graph execution failed: {e!s}",
         )
 
     return QueryResponseV2(
@@ -286,7 +286,7 @@ async def submit_query(request: QueryRequest):
             pass
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Graph execution failed: {str(e)}",
+            detail=f"Graph execution failed: {e!s}",
         )
 
     return QueryResponse(
@@ -353,7 +353,7 @@ async def submit_review(thread_id: str, request: ReviewRequest):
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Resume failed: {str(e)}",
+            detail=f"Resume failed: {e!s}",
         )
 
     return ReviewResponse(
@@ -419,7 +419,7 @@ async def get_pending_reviews():
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list pending reviews: {str(e)}",
+            detail=f"Failed to list pending reviews: {e!s}",
         )
 
     return pending

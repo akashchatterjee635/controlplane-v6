@@ -14,7 +14,6 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
 
-
 # ---------------------------------------------------------------------------
 # Individual Scoring Functions
 # ---------------------------------------------------------------------------
@@ -247,7 +246,7 @@ def print_report(report: dict, mode_name: str = "ControlPlane") -> None:
     print(f"  Total cost (USD):     ${report['total_cost_usd']:.6f}")
     print(f"  Avg cost/query:       ${report['avg_cost_per_query']:.6f}")
     print(f"  Route distribution:   {report['route_distribution']}")
-    print(f"\n  Category Breakdown:")
+    print("\n  Category Breakdown:")
     for cat, data in report.get("category_breakdown", {}).items():
         print(
             f"    {cat:20s}  n={data['count']:2d}  "

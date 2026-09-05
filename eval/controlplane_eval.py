@@ -14,12 +14,10 @@ Usage:
 """
 
 import argparse
-import json
 import os
 import sys
 import time
 from pathlib import Path
-from unittest.mock import patch
 
 from dotenv import load_dotenv
 
@@ -28,15 +26,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 load_dotenv()
 
-from langgraph.checkpoint.sqlite import SqliteSaver
 
-from app.graph import build_graph, get_compiled_graph
+from app.graph import build_graph
 from eval.metrics import (
-    load_dataset,
-    score_single_query,
     aggregate_report,
+    load_dataset,
     print_report,
     save_results,
+    score_single_query,
 )
 
 
@@ -84,7 +81,7 @@ def run_single_query(
         except Exception as e:
             elapsed = (time.time() - start) * 1000
             return {
-                "generation": f"Error: {str(e)}",
+                "generation": f"Error: {e!s}",
                 "route": "unknown",
                 "cost_tracker": {},
                 "latency_ms": round(elapsed, 1),

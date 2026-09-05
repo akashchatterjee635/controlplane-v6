@@ -1,10 +1,10 @@
-import os
-import json
-import pytest
-from pathlib import Path
 from unittest.mock import patch
-from app.utils.audit import create_audit_record, log_audit, load_audit_log
+
+import pytest
+
+from app.utils.audit import create_audit_record, load_audit_log, log_audit
 from app.utils.feedback import compute_override_rate
+
 
 @pytest.fixture
 def mock_audit_path(tmp_path):
@@ -32,7 +32,6 @@ def test_create_and_log_audit(mock_audit_path):
     assert len(loaded) == 1
     assert loaded[0]["query_id"] == "test-123"
 
-from unittest.mock import patch
 
 def test_compute_override_rate():
     # Write some dummy records

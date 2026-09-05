@@ -26,8 +26,8 @@ Routing decision:
       route = "verified"
 """
 
-import re
 import os
+import re
 from typing import Any, Literal
 
 import yaml
@@ -88,8 +88,8 @@ def classify_domain(query: str) -> str:
     Returns one of: medical, legal, financial, regulated, security_sensitive,
     technical, general.
     """
+    from langchain_core.messages import HumanMessage, SystemMessage
     from langchain_openai import ChatOpenAI
-    from langchain_core.messages import SystemMessage, HumanMessage
 
     try:
         classifier = ChatOpenAI(
@@ -127,8 +127,8 @@ def classify_injection(query: str) -> bool:
 
     Returns True if injection detected, False otherwise.
     """
+    from langchain_core.messages import HumanMessage, SystemMessage
     from langchain_openai import ChatOpenAI
-    from langchain_core.messages import SystemMessage, HumanMessage
 
     try:
         classifier = ChatOpenAI(

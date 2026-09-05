@@ -6,16 +6,16 @@ Layer 2 LLM-based checks (groundedness, safety, compliance).
 
 import os
 from typing import Any, Literal
-import yaml
 
-from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage
+import yaml
 from langchain_core.documents import Document
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
 
 from app.state import ControlPlaneState, ValidationResult
-from app.utils.security import detect_pii, check_prompt_injection, sanitize_output
 from app.utils.cost import update_cost_record
+from app.utils.security import check_prompt_injection, detect_pii, sanitize_output
 
 
 # ---------------------------------------------------------------------------
@@ -213,8 +213,8 @@ Provide your assessment."""
         safe = None
         compliant = None
         confidence = 0.5  # low confidence triggers human review
-        reasoning = f"LLM validation failed: {str(e)}"
-        audit_entries.append(f"[VALIDATE] Layer 2 failed: {str(e)}")
+        reasoning = f"LLM validation failed: {e!s}"
+        audit_entries.append(f"[VALIDATE] Layer 2 failed: {e!s}")
 
     # ---- Combine results ----
     confidence_threshold = policies.get("thresholds", {}).get(

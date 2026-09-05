@@ -9,7 +9,7 @@ from __future__ import annotations
 import operator
 import time
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Literal, Optional
+from typing import Annotated, Any, Literal
 
 from langchain_core.documents import Document
 from typing_extensions import TypedDict
@@ -63,9 +63,9 @@ class ValidatorResult:
 class ValidationResult:
     """Combined output of the validation pipeline."""
     passed: bool = True
-    grounded: Optional[bool] = None
-    safe: Optional[bool] = None
-    compliant: Optional[bool] = None
+    grounded: bool | None = None
+    safe: bool | None = None
+    compliant: bool | None = None
     confidence: float = 1.0
     flags: list[str] = field(default_factory=list)
     details: str = ""
@@ -79,7 +79,7 @@ class ValidationResult:
 class HumanDecision:
     """Captures the outcome of a human review."""
     decision: Literal["approve", "redact", "deny"] = "approve"
-    redacted_response: Optional[str] = None
+    redacted_response: str | None = None
     reason: str = ""
     reviewer: str = "unknown"
 
