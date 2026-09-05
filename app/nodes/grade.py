@@ -10,11 +10,9 @@ from typing import Any, Literal
 
 import yaml
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 from app.state import ControlPlaneState
-from app.utils.cost import update_cost_record
 
 
 class DocumentGrade(BaseModel):
@@ -49,43 +47,47 @@ def grade_documents_node(state: ControlPlaneState) -> dict[str, Any]:
             "audit_log": ["[GRADE] No documents to grade. Fallback to web search."],
         }
 
-    model_name = os.getenv("LLM_MODEL", "gpt-4o-mini")
-    llm = ChatOpenAI(model=model_name, temperature=0).with_structured_output(DocumentGrade)
+    import json
 
+    from app.utils.llm_gateway import LLMGateway
+
+    gateway = LLMGateway(cost_tracker)
+    
     system_prompt = (
         "You are a grader assessing relevance of a retrieved document to a user question.\n"
         "If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant.\n"
-        "It does not need to be a stringent test. The goal is to filter out erroneous retrievals."
+        "It does not need to be a stringent test. The goal is to filter out erroneous retrievals.\n"
+        "Reply with a JSON object (nothing else):\n"
+        '{"relevant": <bool>, "reason": <string>}'
     )
 
     graded_docs = []
-    total_prompt_tokens = 0
-    total_completion_tokens = 0
-
     audit_entries = []
 
     for idx, doc in enumerate(documents):
         human_prompt = f"Retrieved document: \n\n{doc.page_content}\n\nUser question: {query}"
         
-        # In a real app we'd get token usage from the LLM callback, but for now we'll mock token counts
-        # or rely on langchain's metadata if available. Using standard LLM call.
-        response = llm.invoke([
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=human_prompt)
-        ])
+        result_text = gateway.invoke(
+            [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)],
+            purpose="grade-document"
+        ).strip()
         
-        # We roughly estimate tokens since with_structured_output doesn't easily expose token usage in all langchain versions
-        # A more precise implementation would use get_openai_callback
-        prompt_tokens_est = len(system_prompt.split()) + len(human_prompt.split())
-        comp_tokens_est = 20 # small JSON output
-        total_prompt_tokens += prompt_tokens_est
-        total_completion_tokens += comp_tokens_est
+        if "```" in result_text:
+            result_text = result_text.split("```")[1].removeprefix("json").strip()
+            
+        try:
+            result_data = json.loads(result_text)
+            relevant = result_data.get("relevant", False)
+            reason = result_data.get("reason", "No reason provided")
+        except json.JSONDecodeError:
+            relevant = False
+            reason = "Failed to parse LLM response"
 
-        if response.relevant:
+        if relevant:
             graded_docs.append(doc)
-            audit_entries.append(f"[GRADE] Document {idx+1} relevant: {response.reason}")
+            audit_entries.append(f"[GRADE] Document {idx+1} relevant: {reason}")
         else:
-            audit_entries.append(f"[GRADE] Document {idx+1} irrelevant: {response.reason}")
+            audit_entries.append(f"[GRADE] Document {idx+1} irrelevant: {reason}")
 
     # Load policies to check threshold, default to 1 relevant doc
     # policies = _load_policies()
@@ -95,17 +97,10 @@ def grade_documents_node(state: ControlPlaneState) -> dict[str, Any]:
     if web_search_needed:
         audit_entries.append("[GRADE] Insufficient relevant documents. Triggering web search.")
 
-    updated_cost = update_cost_record(
-        cost_tracker,
-        prompt_tokens=total_prompt_tokens,
-        completion_tokens=total_completion_tokens,
-        model=model_name
-    )
-
     return {
         "graded_documents": graded_docs,
         "web_search_needed": web_search_needed,
-        "cost_tracker": updated_cost,
+        "cost_tracker": gateway.cost_tracker,
         "audit_log": audit_entries,
     }
 

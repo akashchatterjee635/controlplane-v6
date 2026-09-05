@@ -28,7 +28,7 @@ def test_graph_node_count():
     """Verify the exact number of nodes to ensure no unexpected additions."""
     builder = build_graph()
     # Subtract 1 for the __start__ node that langgraph adds internally
-    custom_nodes = [n for n in builder.nodes.keys() if not n.startswith("__")]
+    custom_nodes = [n for n in builder.nodes if not n.startswith("__")]
     
     # 13 custom nodes in Phase 5:
     # router, retrieve_fast, generate_fast, validate_fast,

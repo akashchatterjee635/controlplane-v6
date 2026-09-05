@@ -91,21 +91,28 @@ class HumanDecision:
 class AuditRecord:
     """Structured audit log entry for every graph execution."""
     query_id: str = ""
+    request_id: str = ""
     timestamp: str = ""
     use_case: str = "default"
+    profile_name: str = "default"
     route: str = ""
     complexity_score: int = 0
     risk_score: int = 0
     risk_labels: list[str] = field(default_factory=list)
     validators_triggered: list[str] = field(default_factory=list)
+    validator_versions: dict[str, str] = field(default_factory=dict)
     decision: str = ""           # allow/edit/flag/review/block
     decision_reasoning: str = ""
     reviewer_action: str | None = None
+    authenticated_reviewer_id: str | None = None
     final_output_hash: str = ""
     latency_ms: float = 0.0
     cost_usd: float = 0.0
     model_id: str = ""
+    model_revision: str = ""
     policy_version: str = "1.0"
+    prompt_version: str = "1.0"
+    retrieval_index_version: str = "1.0"
     trace_id: str = ""
 
 

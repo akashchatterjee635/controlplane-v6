@@ -30,7 +30,7 @@ def run_single_query(graph, query: str, use_case: str, thread_id: str) -> dict:
     config = {"configurable": {"thread_id": thread_id}}
     try:
         result = graph.invoke({"query": query, "use_case": use_case}, config)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Check if paused (HITL)
         try:
             state = graph.get_state(config)
@@ -43,8 +43,8 @@ def run_single_query(graph, query: str, use_case: str, thread_id: str) -> dict:
                     "route": values.get("route", "verified"),
                     "reasoning": values.get("decision_reasoning", "")
                 }
-        except Exception:
-            pass
+        except Exception as e:  # noqa: BLE001
+            print(f"Ignored error: {e}")
         return {"decision": "ERROR", "labels": [str(e)], "route": "unknown", "reasoning": ""}
 
     return {

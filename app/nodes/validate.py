@@ -207,7 +207,7 @@ Provide your assessment."""
             model=model_name,
         )
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # If LLM validation fails, default to conservative assessment
         grounded = None
         safe = None

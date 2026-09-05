@@ -30,7 +30,7 @@ def _make_forced_router(force_route: str):
     from app.utils.cost import new_cost_record
 
     def forced_router_node(state):
-        query = state.get("query", "")
+        state.get("query", "")
         use_case = state.get("use_case", "default")
         profile = load_profile(use_case)
         return {
@@ -111,7 +111,7 @@ def run_query(graph, query: str, use_case: str, thread_id: str) -> dict:
     start = time.time()
     try:
         result = graph.invoke({"query": query, "use_case": use_case}, config)
-    except Exception:
+    except Exception:  # noqa: BLE001
         try:
             state = graph.get_state(config)
             if state and state.next:
@@ -125,8 +125,8 @@ def run_query(graph, query: str, use_case: str, thread_id: str) -> dict:
                     "latency_ms": (time.time() - start) * 1000,
                     "hitl": True,
                 }
-        except Exception:
-            pass
+        except Exception as e:  # noqa: BLE001
+            print(f"Ignored error: {e}")
         return {"decision": "ERROR", "route": "unknown", "risk_labels": [],
                 "llm_calls": 0, "cost_usd": 0, "latency_ms": 0, "hitl": False}
 

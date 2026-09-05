@@ -62,7 +62,7 @@ def vanilla_rag(query: str, top_k: int = 5) -> dict:
             name="controlplane_kb",
             embedding_function=embedding_service.get_chroma_ef(),
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         return {
             "generation": "Knowledge base not found. Run data/knowledge_base/seed_data.py first.",
             "route": "baseline",
@@ -145,7 +145,7 @@ def run_baseline_eval(dataset_path: str | None = None, output_path: str | None =
                 f"recall={score['keyword_recall']:.2f} "
                 f"pii_clean={score['pii_clean']}"
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"✗ Error: {e}")
             scores.append({
                 "id": qid,

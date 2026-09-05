@@ -64,7 +64,7 @@ def _llm_judge(text: str, question: str) -> bool:
         user_msg = HumanMessage(content=f"Text: {text}\n\nQuestion: {question}")
         response = judge.invoke([sys_msg, user_msg]).content.strip().upper()
         return "YES" in response
-    except Exception:
+    except Exception:  # noqa: BLE001
         # If LLM fails, treat Layer 0 flag as true positive (fail-safe)
         return True
 
@@ -148,16 +148,14 @@ def run_grounding_check(state: dict, profile: dict) -> ValidatorResult:
 
     # Use LLM to extract claims and check support
     from langchain_core.messages import HumanMessage, SystemMessage
-    from langchain_openai import ChatOpenAI
+
+    from app.utils.llm_gateway import LLMGateway
 
     hallucination_check = profile.get("hallucination_check", "medium")
+    cost_tracker = state.get("cost_tracker", {})
 
     try:
-        judge = ChatOpenAI(
-            model=os.getenv("LLM_MODEL", "gpt-4o-mini"),
-            temperature=0,
-            max_tokens=200,
-        )
+        gateway = LLMGateway(cost_tracker)
 
         # Step 1+2 combined: extract claims and check support in one call
         sys_msg = SystemMessage(content=(
@@ -174,7 +172,7 @@ def run_grounding_check(state: dict, profile: dict) -> ValidatorResult:
             "Analyze grounding:"
         ))
 
-        result_text = judge.invoke([sys_msg, user_msg]).content.strip()
+        result_text = gateway.invoke([sys_msg, user_msg], purpose="validator-grounding", max_tokens=200).strip()
 
         # Parse the JSON response
         import json
@@ -215,7 +213,7 @@ def run_grounding_check(state: dict, profile: dict) -> ValidatorResult:
             details=detail,
         )
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Fallback to simple word-overlap if LLM fails
         doc_text_lower = " ".join(
             d.page_content if hasattr(d, "page_content") else str(d)
@@ -289,7 +287,8 @@ def run_bias_check(state: dict, profile: dict) -> ValidatorResult:
         response[:2000],
         "Does this text express actual bias, prejudice, stereotyping, or "
         "discriminatory views? Answer NO if it merely discusses bias-related "
-        "topics in a neutral, educational, or anti-discrimination context."
+        "topics in a neutral, educational, or anti-discrimination context.",
+        state.get("cost_tracker", {})
     )
 
     if not is_true_positive:
@@ -331,7 +330,8 @@ def run_claim_confidence(state: dict, profile: dict) -> ValidatorResult:
         response[:2000],
         "Does this text contain factual claims that are presented as definitive "
         "facts but lack proper citation, sourcing, or hedging? Answer NO if "
-        "the claims are properly hedged, cited, or clearly stated as opinions."
+        "the claims are properly hedged, cited, or clearly stated as opinions.",
+        state.get("cost_tracker", {})
     )
 
     if not is_true_positive:
@@ -375,7 +375,8 @@ def run_compliance_check(state: dict, profile: dict) -> ValidatorResult:
         combined[:2000],
         "Does this text provide specific medical, legal, or financial advice "
         "that should only come from a licensed professional? Answer NO if it "
-        "merely discusses these topics in an educational, general, or policy context."
+        "merely discusses these topics in an educational, general, or policy context.",
+        state.get("cost_tracker", {})
     )
 
     if not is_true_positive:
@@ -436,7 +437,7 @@ def run_parallel_validators(
             try:
                 result = future.result()
                 results.append(result)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 results.append(ValidatorResult(
                     name=name,
                     passed=False,
@@ -489,20 +490,20 @@ def parallel_validate_node(state: ControlPlaneState) -> dict[str, Any]:
     combined = combine_validator_results(results)
 
     # Collect all risk labels
-    all_labels = list(set(
+    all_labels = list({
         label
         for r in results
         for label in r.risk_labels
-    ))
+    })
 
     return {
         "validation_result": combined,
         "validator_results": [asdict(r) for r in results],
         "risk_labels": all_labels,
         "audit_log": [
-            f"[PARALLEL_VALIDATE] {len(results)} validators, "
+            (f"[PARALLEL_VALIDATE] {len(results)} validators, "
             f"passed={combined['passed']}, confidence={combined['confidence']:.2f}, "
-            f"labels={all_labels}"
+            f"labels={all_labels}")
         ],
     }
 
@@ -516,9 +517,8 @@ def validate_fast_node(state: ControlPlaneState) -> dict[str, Any]:
     generation = state.get("generation", "")
 
     # Auto-sanitize PII on fast path if policy is "redact"
-    if not passed and profile.get("pii_policy", "redact") == "redact":
-        if pii_result.edit_suggestion is not None:
-            generation = pii_result.edit_suggestion
+    if not passed and profile.get("pii_policy", "redact") == "redact" and pii_result.edit_suggestion is not None:
+        generation = pii_result.edit_suggestion
 
     combined = {
         "passed": passed or profile.get("pii_policy") == "allow_internal",
@@ -536,8 +536,8 @@ def validate_fast_node(state: ControlPlaneState) -> dict[str, Any]:
         "validator_results": [asdict(pii_result)],
         "risk_labels": pii_result.risk_labels,
         "audit_log": [
-            f"[VALIDATE_FAST] PII check: passed={pii_result.passed}, "
-            f"details={pii_result.details}"
+            (f"[VALIDATE_FAST] PII check: passed={pii_result.passed}, "
+            f"details={pii_result.details}")
         ],
     }
 

@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 from typing import Any, Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.types import Command
@@ -160,13 +160,23 @@ from fastapi import Header
 _API_KEY = os.getenv("CONTROLPLANE_API_KEY")  # None = auth disabled
 
 
-async def verify_api_key(x_api_key: str | None = Header(default=None)):
+class Principal(BaseModel):
+    user_id: str
+    role: str
+
+async def verify_api_key(x_api_key: str | None = Header(default=None)) -> Principal:
     """Optional API key verification. Enabled when CONTROLPLANE_API_KEY is set."""
-    if _API_KEY and x_api_key != _API_KEY:
+    if not _API_KEY:
+        return Principal(user_id="anonymous", role="admin")
+        
+    if x_api_key != _API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing API key",
         )
+        
+    # In a real app we'd decode a JWT here.
+    return Principal(user_id="authenticated_api_user", role="admin")
 
 
 # ---------------------------------------------------------------------------
@@ -178,7 +188,7 @@ async def health_check():
     return HealthResponse(status="healthy", version="0.4.0")
 
 
-@app.post("/api/v2/query", response_model=QueryResponseV2)
+@app.post("/api/v2/query", response_model=QueryResponseV2, dependencies=[Depends(verify_api_key)])
 async def submit_query_v2(request: QueryRequestV2):
     """Submit a query for adaptive RAG processing with use-case governance."""
     if _compiled_graph is None:
@@ -196,7 +206,7 @@ async def submit_query_v2(request: QueryRequestV2):
             {"query": request.query, "use_case": request.use_case},
             config,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Check if this was an interrupt (HITL pause)
         try:
             graph_state = await run_in_threadpool(
@@ -220,7 +230,7 @@ async def submit_query_v2(request: QueryRequestV2):
                     audit_log=values.get("audit_log", []),
                     status="pending_review",
                 )
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -244,7 +254,7 @@ async def submit_query_v2(request: QueryRequestV2):
     )
 
 
-@app.post("/api/v1/query", response_model=QueryResponse)
+@app.post("/api/v1/query", response_model=QueryResponse, dependencies=[Depends(verify_api_key)])
 async def submit_query(request: QueryRequest):
     """Legacy v1 endpoint for backward compatibility."""
     if _compiled_graph is None:
@@ -262,7 +272,7 @@ async def submit_query(request: QueryRequest):
             {"query": request.query},
             config,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Check if this was an interrupt (HITL pause)
         try:
             graph_state = await run_in_threadpool(
@@ -282,7 +292,7 @@ async def submit_query(request: QueryRequest):
                     audit_log=values.get("audit_log", []),
                     status="pending_review",
                 )
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -302,8 +312,11 @@ async def submit_query(request: QueryRequest):
     )
 
 
+from fastapi import Depends
+
+
 @app.post("/api/v1/review/{thread_id}", response_model=ReviewResponse)
-async def submit_review(thread_id: str, request: ReviewRequest):
+async def submit_review(thread_id: str, request: ReviewRequest, principal: Principal = Depends(verify_api_key)):  # noqa: B008
     """Submit a human review decision and resume the paused graph.
 
     The graph must be paused at the human_review node (i.e., status
@@ -322,7 +335,7 @@ async def submit_review(thread_id: str, request: ReviewRequest):
         graph_state = await run_in_threadpool(
             _compiled_graph.get_state, config
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Thread {thread_id} not found",
@@ -339,7 +352,7 @@ async def submit_review(thread_id: str, request: ReviewRequest):
         "decision": request.decision,
         "redacted_response": request.redacted_response,
         "reason": request.reason,
-        "reviewer": request.reviewer,
+        "reviewer": principal.user_id,
     }
 
     try:
@@ -348,7 +361,7 @@ async def submit_review(thread_id: str, request: ReviewRequest):
             Command(resume=resume_value),
             config,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         import traceback
         traceback.print_exc()
         raise HTTPException(
@@ -364,7 +377,7 @@ async def submit_review(thread_id: str, request: ReviewRequest):
     )
 
 
-@app.get("/api/v1/pending-reviews", response_model=list[PendingReviewItem])
+@app.get("/api/v1/pending-reviews", response_model=list[PendingReviewItem], dependencies=[Depends(verify_api_key)])
 async def get_pending_reviews():
     """List all threads currently awaiting human review.
 
@@ -413,10 +426,11 @@ async def get_pending_reviews():
                             complexity_score=values.get("complexity_score", 0),
                         )
                     )
-            except Exception:
+            except Exception as e:  # noqa: BLE001
+                print(f"Ignored: {e}")
                 continue
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list pending reviews: {e!s}",
@@ -425,7 +439,7 @@ async def get_pending_reviews():
     return pending
 
 
-@app.get("/api/v1/status/{thread_id}", response_model=ThreadStatusResponse)
+@app.get("/api/v1/status/{thread_id}", response_model=ThreadStatusResponse, dependencies=[Depends(verify_api_key)])
 async def get_thread_status(thread_id: str):
     """Check the status of a thread.
 
@@ -441,7 +455,7 @@ async def get_thread_status(thread_id: str):
     config = {"configurable": {"thread_id": thread_id}}
     try:
         state = await run_in_threadpool(_compiled_graph.get_state, config)
-    except Exception:
+    except Exception:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Thread {thread_id} not found",

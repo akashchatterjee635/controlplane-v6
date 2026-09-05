@@ -49,7 +49,7 @@ def seed_knowledge_base(
     # Delete existing collection if it exists to avoid duplicates
     try:
         client.delete_collection(collection_name)
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
     
     collection = client.create_collection(

@@ -54,7 +54,7 @@ def web_search_node(state: ControlPlaneState) -> dict[str, Any]:
             "audit_log": [f"[WEB_SEARCH] Successfully retrieved {len(docs)} documents from web search."],
         }
         
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return {
             "audit_log": [f"[WEB_SEARCH] Web search failed: {e!s}"],
         }

@@ -19,7 +19,7 @@ def decision_node(state: ControlPlaneState) -> dict[str, Any]:
     val_results = state.get("validator_results", [])
     
     # Collect data from validators
-    all_labels = set(label for r in val_results for label in r.get("risk_labels", []))
+    all_labels = {label for r in val_results for label in r.get("risk_labels", [])}
     min_confidence = min((r.get("confidence", 1.0) for r in val_results), default=1.0)
     
     # Defaults

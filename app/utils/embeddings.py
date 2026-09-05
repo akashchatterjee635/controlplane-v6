@@ -6,6 +6,7 @@ import os
 from functools import lru_cache
 
 from sentence_transformers import SentenceTransformer
+from typing_extensions import Self
 
 
 class EmbeddingService:
@@ -14,7 +15,7 @@ class EmbeddingService:
     _instance: EmbeddingService | None = None
     _model: SentenceTransformer | None = None
 
-    def __new__(cls) -> EmbeddingService:
+    def __new__(cls) -> Self:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance

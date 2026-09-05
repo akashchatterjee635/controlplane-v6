@@ -10,7 +10,7 @@ from app.policies.profile_loader import load_profile
 from app.utils.audit import load_audit_log
 
 
-def compute_override_rate(use_case: str = None) -> dict[str, Any]:
+def compute_override_rate(use_case: str | None = None) -> dict[str, Any]:
     """Compute the human override rate from the audit log.
     
     An override is when the decision layer triggers REVIEW, but the human

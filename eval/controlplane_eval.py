@@ -61,7 +61,7 @@ def run_single_query(
 
     try:
         result = graph.invoke({"query": query}, config)
-    except Exception:
+    except Exception:  # noqa: BLE001
         # Check if graph is paused (HITL interrupt)
         try:
             state = graph.get_state(config)
@@ -78,7 +78,7 @@ def run_single_query(
                 )
             else:
                 raise
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             elapsed = (time.time() - start) * 1000
             return {
                 "generation": f"Error: {e!s}",
@@ -168,7 +168,7 @@ def run_controlplane_eval(
                 f"pii_clean={score['pii_clean']}"
             )
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"✗ Error: {e}")
             scores.append({
                 "id": qid,

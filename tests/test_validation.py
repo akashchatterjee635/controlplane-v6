@@ -89,13 +89,13 @@ def test_check_prompt_injection_case_insensitive(sample_policies):
 # ============================================================================
 
 def test_run_layer1_clean(sample_policies):
-    gen, passed, flags, audit = _run_layer1("Clean response.", sample_policies)
+    _, passed, flags, _ = _run_layer1("Clean response.", sample_policies)
     assert passed is True
     assert len(flags) == 0
 
 
 def test_run_layer1_pii(sample_policies):
-    gen, passed, flags, audit = _run_layer1("Email: test@example.com", sample_policies)
+    gen, passed, _, _ = _run_layer1("Email: test@example.com", sample_policies)
     assert passed is False
     assert "[REDACTED EMAIL]" in gen
 

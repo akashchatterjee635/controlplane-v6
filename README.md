@@ -61,17 +61,17 @@ Reviewer decisions, false positives, false negatives, token cost, latency, guard
             ▼                    ▼
        ┌──────────┐       ┌──────────────┐
        │ Validate │       │   Generate   │
-       │ (Layer 1)│       └──────┬───────┘
+       │  (Fast)  │       └──────┬───────┘
        └────┬─────┘              │
             │                    ▼
             │              ┌──────────────┐
-            │              │   Validate   │
-            │              │(Layer 1 + 2) │
+            │              │   Parallel   │
+            │              │  Validators  │
             │              └──────┬───────┘
             │                     │
             │              ┌──────┴──────┐
             │              │             │
-            │            PASS          FAIL
+            │          ALLOW/EDIT    REVIEW/BLOCK
             │              │             │
             │              │             ▼
             │              │      ┌─────────────┐
@@ -87,7 +87,7 @@ Reviewer decisions, false positives, false negatives, token cost, latency, guard
 
 | Path | Triggers When | Steps | Overhead |
 |------|--------------|-------|----------|
-| **🏎️ Fast** | `complexity ≤ 4` AND `risk ≤ 2` | Retrieve → Generate → Basic Validate | ~1 LLM call |
+| **🏎️ Fast** | `complexity ≤ 4` AND `risk ≤ 2` | Retrieve → Generate → Basic Validate | 3 LLM calls |
 | **🔍 Verified** | Everything else | Retrieve → Grade → (Web Search?) → Generate → Full Validate → (HITL?) | 3-5 LLM calls |
 
 ### Deterministic Router Scoring
@@ -369,9 +369,9 @@ python -m pytest tests/test_graph.py -v         # Graph structure
 
 ## Phase 5: Policy Profile Comparison
 
-ControlPlane v7 adds an enterprise governance layer that routes the same user query differently depending on the active policy profile. The goal is not to make one universal safety rule, but to support configurable risk, latency, validation, and human-review thresholds across different AI use cases.
+ControlPlane v6 adds an enterprise governance layer that routes the same user query differently depending on the active policy profile. The goal is not to make one universal safety rule, but to support configurable risk, latency, validation, and human-review thresholds across different AI use cases.
 
-We evaluated 20 queries using GPT-4o-mini across three profiles: `internal_knowledge`, `customer_support`, and `decision_support`. Each profile used different thresholds for risk tolerance, hallucination confidence, PII handling, and HITL escalation.
+We evaluated 50 queries using GPT-4o-mini across three profiles: `internal_knowledge`, `customer_support`, and `decision_support`. Each profile used different thresholds for risk tolerance, hallucination confidence, PII handling, and HITL escalation.
 
 To run this reproducible evaluation:
 ```bash
