@@ -1,4 +1,4 @@
-"""ControlPlane v7 — LangGraph state graph construction.
+"""ControlPlane — LangGraph state graph construction.
 
 Full pipeline:
   Fast path:     retrieve → generate → validate_fast → decision → (outcomes)

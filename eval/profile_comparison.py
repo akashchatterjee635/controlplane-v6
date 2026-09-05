@@ -1,4 +1,4 @@
-"""ControlPlane v7 — Use-Case Profile Comparison.
+"""ControlPlane — Use-Case Profile Comparison.
 
 Runs the evaluation dataset through the ControlPlane pipeline across
 three different policy profiles:
@@ -57,7 +57,7 @@ def main():
     dataset = load_dataset()
     profiles = ["customer_support", "internal_knowledge", "decision_support"]
     
-    print("\n🚀 ControlPlane v7 — Policy Profile Comparison")
+    print("\n🚀 ControlPlane — Policy Profile Comparison")
     print(f"   Queries: {len(dataset)}")
     print(f"   Profiles: {', '.join(profiles)}")
     print(f"   Model: {os.getenv('LLM_MODEL', 'gpt-4o-mini')}\n")

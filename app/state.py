@@ -104,6 +104,9 @@ class AuditRecord:
     final_output_hash: str = ""
     latency_ms: float = 0.0
     cost_usd: float = 0.0
+    model_id: str = ""
+    policy_version: str = "1.0"
+    trace_id: str = ""
 
 
 # ---------------------------------------------------------------------------

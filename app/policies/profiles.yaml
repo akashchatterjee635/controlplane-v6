@@ -3,12 +3,17 @@
 # The router, validators, and decision layer all read from the active profile.
 
 default:
-  max_latency_ms: 3000
-  risk_tolerance: medium       # very_low | low | medium | high
-  risk_tolerance: medium
   pii_policy: redact
   hallucination_check: strict
   human_review_threshold: 0.65
+  complexity_fast_max: 4
+  risk_fast_max: 2
+  forced_verified_domains:
+    - medical
+    - legal
+    - financial
+    - regulated
+    - security_sensitive
   prohibited_keywords:
     - "ignore previous instructions"
     - "ignore all previous instructions"
@@ -16,13 +21,17 @@ default:
     - "bypass safety"
 
 customer_support:
-  max_latency_ms: 1500
-  risk_tolerance: low
   pii_policy: redact
   hallucination_check: strict
   human_review_threshold: 0.65
   complexity_fast_max: 3
   risk_fast_max: 1
+  forced_verified_domains:
+    - medical
+    - legal
+    - financial
+    - regulated
+    - security_sensitive
   prohibited_keywords:
     - "ignore previous instructions"
     - "ignore all previous instructions"
@@ -30,14 +39,18 @@ customer_support:
     - "bypass safety"
 
 internal_knowledge:
-  max_latency_ms: 3000
-  risk_tolerance: medium
   pii_policy: redact
   hallucination_check: medium
   human_review_threshold: 0.45
   complexity_fast_max: 6
   risk_fast_max: 3
   policy_violation_action: review
+  forced_verified_domains:
+    - medical
+    - legal
+    - financial
+    - regulated
+    - security_sensitive
   prohibited_keywords:
     - "ignore previous instructions"
     - "ignore all previous instructions"
@@ -45,13 +58,17 @@ internal_knowledge:
     - "bypass safety"
 
 decision_support:
-  max_latency_ms: 8000
-  risk_tolerance: very_low
   pii_policy: redact
   hallucination_check: strict
   human_review_threshold: 0.80
   complexity_fast_max: 2
   risk_fast_max: 1
+  forced_verified_domains:
+    - medical
+    - legal
+    - financial
+    - regulated
+    - security_sensitive
   prohibited_keywords:
     - "ignore previous instructions"
     - "ignore all previous instructions"

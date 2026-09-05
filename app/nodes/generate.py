@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.state import ControlPlaneState
+from app.utils.retrieval_security import sanitize_documents
 from app.utils.cost import update_cost_record
 
 
@@ -42,6 +43,9 @@ def generate_node(state: ControlPlaneState) -> dict[str, Any]:
     context_docs = state.get("graded_documents", documents)
     if not context_docs:
         context_docs = documents
+    
+    # Sanitize retrieved documents against indirect prompt injection
+    context_docs = sanitize_documents(context_docs)
     
     context = _format_context(context_docs)
     

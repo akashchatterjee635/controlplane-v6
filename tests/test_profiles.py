@@ -4,15 +4,14 @@ from app.policies.profile_loader import load_profile, list_profiles, clear_cache
 def test_load_default_profile():
     clear_cache()
     profile = load_profile("default")
-    assert profile["max_latency_ms"] == 3000
     assert profile["pii_policy"] == "redact"
+    assert "medical" in profile["forced_verified_domains"]
 
 def test_load_customer_support_profile():
     clear_cache()
     profile = load_profile("customer_support")
-    assert profile["max_latency_ms"] == 1500
-    assert profile["risk_tolerance"] == "low"
     assert profile["hallucination_check"] == "strict"
+    assert profile["complexity_fast_max"] == 3
     # Should inherit default pii_policy (or similar)
     assert profile["pii_policy"] == "redact"
 

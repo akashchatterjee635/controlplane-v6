@@ -220,7 +220,7 @@ class TestAggregateReport:
 class TestLoadDataset:
     def test_loads_eval_dataset(self):
         dataset = load_dataset()
-        assert len(dataset) == 20
+        assert len(dataset) == 50
         assert all("id" in q for q in dataset)
         assert all("query" in q for q in dataset)
         assert all("expected_answer" in q for q in dataset)

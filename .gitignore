@@ -26,3 +26,7 @@ __pycache__/
 
 # macOS
 .DS_Store
+
+# Audit logs (sensitive)
+data/audit_log.jsonl
+data/*.jsonl

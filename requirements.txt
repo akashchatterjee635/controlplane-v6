@@ -16,3 +16,4 @@ pytest>=8.0
 pytest-asyncio>=0.25
 aiosqlite>=0.21
 python-dotenv>=1.0
+requests>=2.31

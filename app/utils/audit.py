@@ -47,6 +47,9 @@ def create_audit_record(state: dict[str, Any]) -> AuditRecord:
         final_output_hash=_hash_output(state.get("generation", "")),
         latency_ms=latency_ms,
         cost_usd=cost_usd,
+        model_id=os.getenv('LLM_MODEL', 'gpt-4o-mini'),
+        policy_version='1.0',
+        trace_id=state.get('configurable', {}).get('thread_id', '') + '_' + str(int(cost_tracker.get('start_time', 0))),
     )
 
 def log_audit(record: AuditRecord) -> None:

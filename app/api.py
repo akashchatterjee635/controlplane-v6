@@ -1,4 +1,4 @@
-"""ControlPlane v6 — FastAPI application.
+"""ControlPlane — FastAPI application.
 
 Provides REST endpoints for query processing, human review,
 and status checking.
@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="ControlPlane v6",
+    title="ControlPlane",
     description="Adaptive RAG with Risk-Aware Routing and Human Oversight",
     version="0.3.0",
     lifespan=lifespan,
@@ -134,6 +134,39 @@ class PendingReviewItem(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     version: str
+
+
+class ThreadStatusResponse(BaseModel):
+    """Explicit DTO for thread status — never expose raw LangGraph state."""
+    thread_id: str
+    status: str          # "complete" | "pending_review"
+    decision: str        # allow/edit/flag/review/block
+    route: str           # fast/verified
+    risk_labels: list[str]
+    complexity_score: int
+    risk_score: int
+
+
+# ---------------------------------------------------------------------------
+# API Key Authentication Stub
+# ---------------------------------------------------------------------------
+# NOTE: In production, replace with JWT/OAuth + RBAC with roles:
+#   viewer, reviewer, policy_admin, system_admin
+# The server should derive reviewer_id, tenant_id, roles from
+# authenticated identity — not from user-controlled JSON.
+
+from fastapi import Depends, Header
+
+_API_KEY = os.getenv("CONTROLPLANE_API_KEY")  # None = auth disabled
+
+
+async def verify_api_key(x_api_key: str | None = Header(default=None)):
+    """Optional API key verification. Enabled when CONTROLPLANE_API_KEY is set."""
+    if _API_KEY and x_api_key != _API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API key",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -392,9 +425,13 @@ async def get_pending_reviews():
     return pending
 
 
-@app.get("/api/v1/status/{thread_id}")
+@app.get("/api/v1/status/{thread_id}", response_model=ThreadStatusResponse)
 async def get_thread_status(thread_id: str):
-    """Check the status of a thread."""
+    """Check the status of a thread.
+
+    Returns an explicit DTO — never exposes raw LangGraph state
+    (which could contain prompts, retrieved documents, PII, etc.).
+    """
     if _compiled_graph is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -410,9 +447,19 @@ async def get_thread_status(thread_id: str):
             detail=f"Thread {thread_id} not found",
         )
 
-    return {
-        "thread_id": thread_id,
-        "values": state.values if state else {},
-        "next": list(state.next) if state and state.next else [],
-        "status": "pending_review" if state and state.next else "complete",
-    }
+    if not state:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Thread {thread_id} not found",
+        )
+
+    values = state.values or {}
+    return ThreadStatusResponse(
+        thread_id=thread_id,
+        status="pending_review" if state.next else "complete",
+        decision=values.get("decision", "unknown"),
+        route=values.get("route", "unknown"),
+        risk_labels=values.get("risk_labels", []),
+        complexity_score=values.get("complexity_score", 0),
+        risk_score=values.get("risk_score", 0),
+    )
