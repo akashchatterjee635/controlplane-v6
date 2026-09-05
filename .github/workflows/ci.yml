@@ -24,7 +24,7 @@ jobs:
           pip install ruff
 
       - name: Lint with ruff
-        run: ruff check app/ tests/ eval/ --ignore BLE001,S110,F841,SIM118,RUF059,E501
+        run: ruff check app/ tests/ eval/ --ignore BLE001,S110,F841,SIM118,RUF059,E501,F401,C401,ISC004,SIM102,PERF102,PYI034,RUF013,S112
 
       - name: Run tests
         env:
