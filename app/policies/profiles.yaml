@@ -11,6 +11,7 @@ default:
   human_review_threshold: 0.65
   prohibited_keywords:
     - "ignore previous instructions"
+    - "ignore all previous instructions"
     - "act as root"
     - "bypass safety"
 
@@ -24,6 +25,7 @@ customer_support:
   risk_fast_max: 1
   prohibited_keywords:
     - "ignore previous instructions"
+    - "ignore all previous instructions"
     - "act as root"
     - "bypass safety"
 
@@ -38,6 +40,7 @@ internal_knowledge:
   policy_violation_action: review
   prohibited_keywords:
     - "ignore previous instructions"
+    - "ignore all previous instructions"
     - "act as root"
     - "bypass safety"
 
@@ -51,5 +54,6 @@ decision_support:
   risk_fast_max: 1
   prohibited_keywords:
     - "ignore previous instructions"
+    - "ignore all previous instructions"
     - "act as root"
     - "bypass safety"

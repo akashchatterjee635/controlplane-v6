@@ -33,7 +33,8 @@ def web_search_node(state: ControlPlaneState) -> dict[str, Any]:
         client = TavilyClient(api_key=api_key)
         # We can search for the original query. In a more advanced setup, 
         # an LLM could rewrite the query to optimize for web search.
-        results = client.search(query=query, search_depth="basic", max_results=3)
+        # Use search_depth="advanced" and max_results=5 for better context
+        results = client.search(query=query, search_depth="advanced", max_results=5)
         
         docs = []
         for res in results.get("results", []):

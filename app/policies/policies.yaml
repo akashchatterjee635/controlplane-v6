@@ -46,6 +46,7 @@ sensitive_topics:
 
 prohibited_keywords:
   - "ignore previous instructions"
+  - "ignore all previous instructions"
   - "act as root"
   - "bypass safety"
   - "disregard all rules"

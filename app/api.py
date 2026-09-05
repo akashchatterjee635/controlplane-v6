@@ -32,15 +32,16 @@ async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
     global _checkpointer, _compiled_graph
     
+    import sqlite3
     db_path = os.getenv("SQLITE_CHECKPOINT_PATH", "./checkpoints.db")
-    _checkpointer = SqliteSaver.from_conn_string(db_path)
-    _checkpointer.__enter__()
+    conn = sqlite3.connect(db_path, check_same_thread=False)
+    _checkpointer = SqliteSaver(conn)
     _compiled_graph = get_compiled_graph(checkpointer=_checkpointer)
     
     yield
     
-    if _checkpointer:
-        _checkpointer.__exit__(None, None, None)
+    if conn:
+        conn.close()
 
 
 app = FastAPI(
@@ -315,6 +316,8 @@ async def submit_review(thread_id: str, request: ReviewRequest):
             config,
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Resume failed: {str(e)}",
