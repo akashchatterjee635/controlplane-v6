@@ -13,6 +13,25 @@ import os
 import requests
 import streamlit as st
 from dotenv import load_dotenv
+import subprocess
+import time
+import socket
+
+def is_port_in_use(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(('localhost', port)) == 0
+
+# Auto-start FastAPI backend if running locally or on Streamlit Cloud
+if not is_port_in_use(8000) and os.getenv("API_BASE_URL") is None:
+    # Ensure seed data is present
+    if not os.path.exists("chroma_db"):
+        print("Seeding knowledge base...")
+        subprocess.run(["python", "data/knowledge_base/seed_data.py"], check=False)
+        
+    print("Starting FastAPI backend in the background...")
+    subprocess.Popen(["uvicorn", "app.api:app", "--port", "8000", "--host", "0.0.0.0"])
+    # Give it a few seconds to start
+    time.sleep(3)
 
 load_dotenv()
 
